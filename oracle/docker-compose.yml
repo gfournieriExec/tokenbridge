@@ -4,7 +4,7 @@ services:
   rabbit:
     cpus: 0.3
     mem_limit: 500m
-    environment: ['RABBITMQ_NODENAME=node@rabbit']
+    environment: [ 'RABBITMQ_NODENAME=node@rabbit' ]
     hostname: rabbit
     image: rabbitmq:3
     networks:
@@ -14,21 +14,21 @@ services:
       - net_rabbit_bridge_senderhome
       - net_rabbit_bridge_senderforeign
     restart: unless-stopped
-    volumes: ['~/bridge_data/rabbitmq:/var/lib/rabbitmq/mnesia']
+    volumes: [ '~/bridge_data/rabbitmq:/var/lib/rabbitmq/mnesia' ]
   redis:
     cpus: 0.1
     mem_limit: 500m
-    command: [redis-server, --appendonly, 'yes']
+    command: [ redis-server, --appendonly, 'yes' ]
     hostname: redis
     image: redis:4
-    networks:    
+    networks:
       - net_db_bridge_request
       - net_db_bridge_collected
       - net_db_bridge_affirmation
       - net_db_bridge_senderhome
       - net_db_bridge_senderforeign
     restart: unless-stopped
-    volumes: ['~/bridge_data/redis:/data']
+    volumes: [ '~/bridge_data/redis:/data' ]
   bridge_request:
     cpus: 0.1
     mem_limit: 500m
@@ -36,14 +36,16 @@ services:
       context: ..
       dockerfile: oracle/Dockerfile
     env_file: ./.env
-    environment: 
-      - NODE_ENV=production 
+    environment:
+      - NODE_ENV=production
       - VALIDATOR_ADDRESS_PRIVATE_KEY=${VALIDATOR_ADDRESS_PRIVATE_KEY}
     restart: unless-stopped
     entrypoint: yarn watcher:signature-request
     networks:
       - net_db_bridge_request
       - net_rabbit_bridge_request
+      - poa-network-gabriel
+
   bridge_collected:
     cpus: 0.1
     mem_limit: 500m
@@ -51,14 +53,16 @@ services:
       context: ..
       dockerfile: oracle/Dockerfile
     env_file: ./.env
-    environment: 
-      - NODE_ENV=production 
+    environment:
+      - NODE_ENV=production
       - VALIDATOR_ADDRESS=${VALIDATOR_ADDRESS}
     restart: unless-stopped
     entrypoint: yarn watcher:collected-signatures
     networks:
       - net_db_bridge_collected
       - net_rabbit_bridge_collected
+      - poa-network-gabriel
+
   bridge_affirmation:
     cpus: 0.1
     mem_limit: 500m
@@ -66,14 +70,16 @@ services:
       context: ..
       dockerfile: oracle/Dockerfile
     env_file: ./.env
-    environment: 
-      - NODE_ENV=production 
+    environment:
+      - NODE_ENV=production
       - VALIDATOR_ADDRESS=${VALIDATOR_ADDRESS}
     restart: unless-stopped
     entrypoint: yarn watcher:affirmation-request
     networks:
       - net_db_bridge_affirmation
       - net_rabbit_bridge_affirmation
+      - poa-network-gabriel
+
   bridge_senderhome:
     cpus: 0.1
     mem_limit: 500m
@@ -81,14 +87,16 @@ services:
       context: ..
       dockerfile: oracle/Dockerfile
     env_file: ./.env
-    environment: 
-      - NODE_ENV=production 
+    environment:
+      - NODE_ENV=production
       - VALIDATOR_ADDRESS_PRIVATE_KEY=${VALIDATOR_ADDRESS_PRIVATE_KEY}
     restart: unless-stopped
     entrypoint: yarn sender:home
     networks:
       - net_db_bridge_senderhome
       - net_rabbit_bridge_senderhome
+      - poa-network-gabriel
+
   bridge_senderforeign:
     cpus: 0.1
     mem_limit: 500m
@@ -96,14 +104,25 @@ services:
       context: ..
       dockerfile: oracle/Dockerfile
     env_file: ./.env
-    environment: 
-      - NODE_ENV=production 
+    environment:
+      - NODE_ENV=production
       - VALIDATOR_ADDRESS_PRIVATE_KEY=${VALIDATOR_ADDRESS_PRIVATE_KEY}
     restart: unless-stopped
     entrypoint: yarn sender:foreign
     networks:
       - net_db_bridge_senderforeign
       - net_rabbit_bridge_senderforeign
+      - poa-network-gabriel
+
+  test:
+    build:
+      context: ..
+      dockerfile: oracle/Dockerfile
+    env_file: ./.env
+    networks:
+      - net_db_bridge_senderforeign
+      - net_rabbit_bridge_senderforeign
+      - poa-network-gabriel
 
 networks:
   net_db_bridge_request:
@@ -126,3 +145,6 @@ networks:
     driver: bridge
   net_rabbit_bridge_senderforeign:
     driver: bridge
+  poa-network-gabriel:
+    external:
+      name: poa-network-gabriel
